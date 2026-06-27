@@ -41,4 +41,4 @@ jobs:
 
       - name: Actualizar servicio en ECS
         run: |
-          aws ecs update-service --cluster tu-cluster-name --service tu-service-name --force-new-deployment
+          aws ecs update-service --cluster techstore-cluster --service techstore-service --force-new-deployment

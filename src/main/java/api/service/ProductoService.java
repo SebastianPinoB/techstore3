@@ -3,7 +3,10 @@ package api.service;
 import api.dto.ProductoDTO;
 import api.model.Producto;
 import api.repository.ProductoRepository;
+import software.amazon.awssdk.services.sqs.SqsClient;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -12,6 +15,20 @@ public class ProductoService {
 
     @Autowired
     private ProductoRepository productoRepository;
+
+    @Autowired
+    private SqsClient sqsClient;
+
+    // uRL desde application.properties
+    @Value("${aws.sqs.queue.url}")
+    private String queueUrl;
+
+    public void registrarAuditoria(String accion, Long id, String usuario) {
+        String mensaje = String.format("{\"accion\": \"%s\", \"productoId\": %d, \"usuario\": \"%s\"}", 
+                                        accion, id, usuario);
+        
+        sqsClient.sendMessage(m -> m.queueUrl(queueUrl).messageBody(mensaje));
+    }
 
     public List<Producto> listarTodos() {
         return productoRepository.findAll();
