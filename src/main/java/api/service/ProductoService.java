@@ -24,16 +24,16 @@ public class ProductoService {
     private String queueUrl;
 
     public void registrarAuditoria(String accion, Long id, String usuario) {
-        String mensaje = String.format("{\"accion\": \"%s\", \"productoId\": %d, \"usuario\": \"%s\"}", 
-                                        accion, id, usuario);
-        
+        String mensaje = String.format("{\"accion\": \"%s\", \"productoId\": %d, \"usuario\": \"%s\"}",
+                accion, id, usuario);
+
         sqsClient.sendMessage(m -> m.queueUrl(queueUrl).messageBody(mensaje));
     }
 
     public List<Producto> listarTodos() {
         return productoRepository.findAll();
     }
-    
+
     public Producto crear(ProductoDTO dto) {
         Producto producto = new Producto();
         producto.setNombre(dto.getNombre());
@@ -42,7 +42,13 @@ public class ProductoService {
         producto.setStock(dto.getStock());
         producto.setCategoria(dto.getCategoria());
         producto.setActivo(dto.getActivo() != null ? dto.getActivo() : true);
-        return productoRepository.save(producto);
+
+        Producto guardado = productoRepository.save(producto); // primero guarda
+
+        registrarAuditoria("CREAR", guardado.getId(), "usuario_actual"); // después audita, ya con ID real
+
+        return guardado;
+
     }
 
     public Producto modificar(Long id, ProductoDTO dto) {
@@ -56,7 +62,11 @@ public class ProductoService {
         if (dto.getActivo() != null) {
             producto.setActivo(dto.getActivo());
         }
-        return productoRepository.save(producto);
+        Producto actualizado = productoRepository.save(producto);
+
+        registrarAuditoria("ACTUALIZAR", actualizado.getId(), "usuario_actual");
+
+        return actualizado;
     }
 
     public void eliminar(Long id) {
@@ -64,6 +74,7 @@ public class ProductoService {
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
         producto.setActivo(false);
         productoRepository.save(producto);
+        registrarAuditoria("ELIMINAR", id, "usuario_actual");
     }
 
 }
