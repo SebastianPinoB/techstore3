@@ -24,11 +24,17 @@ public class ProductoService {
     private String queueUrl;
 
     public void registrarAuditoria(String accion, Long id, String usuario) {
-        String mensaje = String.format("{\"accion\": \"%s\", \"productoId\": %d, \"usuario\": \"%s\"}",
-                accion, id, usuario);
-
-        sqsClient.sendMessage(m -> m.queueUrl(queueUrl).messageBody(mensaje));
+    String mensaje = String.format("{\"accion\": \"%s\", \"productoId\": %d, \"usuario\": \"%s\"}", 
+                                    accion, id, usuario);
+    try {
+        System.out.println("[Auditoria] Intentando enviar a SQS: " + mensaje);
+        var response = sqsClient.sendMessage(m -> m.queueUrl(queueUrl).messageBody(mensaje));
+        System.out.println("[Auditoria] Mensaje enviado con éxito. MessageId: " + response.messageId());
+    } catch (Exception e) {
+        System.out.println("[Auditoria] ERROR al enviar a SQS: " + e.getMessage());
+        e.printStackTrace();
     }
+}
 
     public List<Producto> listarTodos() {
         return productoRepository.findAll();
